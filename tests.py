@@ -40,24 +40,41 @@ class Test(unittest.TestCase):
     plain_text = [0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66,
                   0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff]
 
-    encrypted_text = [0x8d, 0xf4, 0xe9, 0xaa, 0xc5, 0xc7, 0x57,
-                      0x3a, 0x27, 0xd8, 0xd0, 0x55, 0xd6, 0xe4, 0xd6, 0x4b]
+    encrypted_text_1_round = '2b6f37256cfbb4d1236ebf33c512a1c3'
+
+    encrypted_text_3_rounds = '6d907fdba181755864be2a35037f426f'
+
+    encrypted_text_11_rounds = '8df4e9aac5c7573a27d8d055d6e4d64b'
 
     @classmethod
     def setUpClass(self):
         pass
 
     def test_key_expansion(self):
-        expanded_key = expand_key(self.key)
-        print('\nExpanded key:')
-        print_keys(expanded_key)
+        expanded_key = expand_key(self.key, 11)
+        # print('\nExpanded key:')
+        # print_keys(expanded_key)
         self.assertEqual(expanded_key, self.expanded_key)
 
-    def test_encryption(self):
-        encrypted_text = encrypt(self.plain_text, self.key)
+    def test_1_round_encryption(self):
+        encrypted_text = encrypt(self.plain_text, self.key, 1)
         print('\nPlain text: ', bytes_to_hex_string(self.plain_text))
-        print('Encrypted text: ', bytes_to_hex_string(encrypted_text))
-        self.assertEqual(encrypted_text, self.encrypted_text)
+        # print('Encrypted text: ', bytes_to_hex_string(encrypted_text))
+        # print('Encrypted text: ', bytes_to_hex_string(encrypted_text))
+        self.assertEqual(bytes_to_hex_string(encrypted_text),
+                         self.encrypted_text_1_round)
+
+    def test_3_rounds_encryption(self):
+        encrypted_text = encrypt(self.plain_text, self.key, 3)
+        print('\nPlain text: ', bytes_to_hex_string(self.plain_text))
+        # print('Encrypted text: ', bytes_to_hex_string(encrypted_text))
+        self.assertEqual(bytes_to_hex_string(encrypted_text), self.encrypted_text_3_rounds)
+
+    def test_11_rounds_encryption(self):
+        encrypted_text = encrypt(self.plain_text, self.key, 11)
+        print('\nPlain text: ', bytes_to_hex_string(self.plain_text))
+        # print('Encrypted text: ', bytes_to_hex_string(encrypted_text))
+        self.assertEqual(bytes_to_hex_string(encrypted_text), self.encrypted_text_11_rounds)
 
     @classmethod
     def tearDownClass(self):
