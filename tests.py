@@ -1,6 +1,6 @@
 import unittest
 
-from main import bytes_to_hex_string, encrypt, expand_key, print_keys, decrypt
+from main import Mode, bytes_to_hex_string, encrypt, expand_key, decrypt
 
 
 class Test(unittest.TestCase):
@@ -57,7 +57,7 @@ class Test(unittest.TestCase):
         self.assertEqual(expanded_key, self.expanded_key)
 
     def test_1_round_encryption(self):
-        encrypted_text = encrypt(self.plain_text, self.key, 1)
+        encrypted_text = encrypt(self.plain_text, self.key, rounds=1)
         # print('\nPlain text: ', bytes_to_hex_string(self.plain_text))
         # print('Encrypted text: ', bytes_to_hex_string(encrypted_text))
         # print('Encrypted text: ', bytes_to_hex_string(encrypted_text))
@@ -65,20 +65,20 @@ class Test(unittest.TestCase):
                          self.encrypted_text_1_round)
 
     def test_3_rounds_encryption(self):
-        encrypted_text = encrypt(self.plain_text, self.key, 3)
+        encrypted_text = encrypt(self.plain_text, self.key, rounds=3)
         # print('\nPlain text: ', bytes_to_hex_string(self.plain_text))
         # print('Encrypted text: ', bytes_to_hex_string(encrypted_text))
         self.assertEqual(bytes_to_hex_string(encrypted_text), self.encrypted_text_3_rounds)
 
     def test_11_rounds_encryption(self):
-        encrypted_text = encrypt(self.plain_text, self.key, 11)
+        encrypted_text = encrypt(self.plain_text, self.key)
         # print('\nPlain text: ', bytes_to_hex_string(self.plain_text))
         # print('Encrypted text: ', bytes_to_hex_string(encrypted_text))
         self.assertEqual(bytes_to_hex_string(encrypted_text), self.encrypted_text_11_rounds)
 
     def test_decryption(self):
-        encrypted_text = encrypt(self.plain_text, self.key, 11)
-        decrypted_text = decrypt(encrypted_text, self.key, 11)
+        encrypted_text = encrypt(self.plain_text, self.key, Mode.CTR, bytes([0x00]*16))
+        decrypted_text = decrypt(encrypted_text, self.key, Mode.CTR, bytes([0x00]*16))
         self.assertEqual(bytes_to_hex_string(decrypted_text), bytes_to_hex_string(self.plain_text))
 
     @classmethod

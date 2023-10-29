@@ -1,3 +1,11 @@
+from enum import Enum
+
+
+class Mode(Enum):
+    ECB = 'ECB'
+    CTR = 'CTR'
+
+
 s_box = (
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
     0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
@@ -169,7 +177,7 @@ def mix_columns(state, matrix):
     return state
 
 
-def encrypt_state(state: bytes, expanded_key: bytes, rounds: int):
+def encrypt_block(state: bytes, expanded_key: bytes, rounds: int):
     round_key_gen = (expanded_key[i * 16: i * 16 + 16] for i in range(rounds))
     state = add_round_key(state, next(round_key_gen))
     if rounds <= 1:
@@ -202,10 +210,11 @@ def pad_message(message: bytes):
 
 def unpad_message(message):
     padding = message[-1]
+    print('padding', padding)
     return message[:-padding]
 
 
-def join_states(states: list[list[bytes]]):
+def join_blocks(states: list[list[bytes]]):
     return bytes([byte for state in states for byte in state])
 
 
@@ -213,13 +222,38 @@ def slipt_message(message, block_size=16):
     return [message[i:i+block_size] for i in range(0, len(message), block_size)]
 
 
-def encrypt(message: bytes, key: bytes, rounds=11):
+def generate_keystreams(expanded_key: bytes, rounds: int, iv: bytes, n: int):
+    keystreams = []
+    counter = int.from_bytes(iv, byteorder='big')
+    for _ in range(n):
+        counter_block = counter.to_bytes(16, byteorder='big')
+        keystream = encrypt_block(counter_block, expanded_key, rounds)
+        keystreams.append(keystream)
+        counter += 1
+    return keystreams
+
+
+def ctr_encrypt(states, expanded_key, rounds, iv):
+    blocks = []
+    keystreams = generate_keystreams(expanded_key, rounds, iv, len(states))
+    for plain_text_block, keystream in zip(states, keystreams):
+        blocks.append(
+            [a ^ b for a, b in zip(plain_text_block, keystream)])
+    return blocks
+
+
+def encrypt(message: bytes, key: bytes, mode=Mode.ECB, iv: bytes = None, rounds=11):
     expanded_key = expand_key(key, rounds)
     padded_message = pad_message(message)
     states = slipt_message(padded_message)
-    encrypted_states = [encrypt_state(
-        state, expanded_key, rounds) for state in states]
-    encrypted_message = join_states(encrypted_states)
+
+    if mode == Mode.ECB:
+        encrypted_blocks = [encrypt_block(
+            state, expanded_key, rounds) for state in states]
+    elif mode == Mode.CTR:
+        encrypted_blocks = ctr_encrypt(states, expanded_key, rounds, iv)
+
+    encrypted_message = join_blocks(encrypted_blocks)
     return encrypted_message
 
 
@@ -228,15 +262,15 @@ def read_file(file_name):
         return f.read()
 
 
-def encrypt_file(file_name: str, key: bytes, rounds=11):
+def encrypt_file(file_name: str, key: bytes, mode=Mode.ECB, iv: bytes = None, rounds=11):
     message = read_file(file_name)
-    encrypted_message = encrypt(message, key, rounds)
+    encrypted_message = encrypt(message, key, mode, iv, rounds)
 
     with open(file_name + '.enc', 'wb') as f:
         f.write(encrypted_message)
 
 
-def decrypt_state(state: bytes, expanded_key: bytes, rounds=11):
+def decrypt_block(state: bytes, expanded_key: bytes, rounds=11):
     round_key_gen = (expanded_key[i * 16: i * 16 + 16]
                      for i in range(rounds - 1, -1, -1))
     state = add_round_key(state, next(round_key_gen))
@@ -254,19 +288,24 @@ def decrypt_state(state: bytes, expanded_key: bytes, rounds=11):
     return state
 
 
-def decrypt(message: bytes, key: bytes, rounds=11):
+def decrypt(message: bytes, key: bytes, mode=Mode.ECB, iv: bytes = None, rounds=11):
     expanded_key = expand_key(key, rounds)
     states = slipt_message(message)
-    decrypted_states = [decrypt_state(
-        state, expanded_key, rounds) for state in states]
-    decrypted_message = join_states(decrypted_states)
+
+    if mode == Mode.ECB:
+        decrypted_blocks = [decrypt_block(
+            state, expanded_key, rounds) for state in states]
+    elif mode == Mode.CTR:
+        decrypted_blocks = ctr_encrypt(states, expanded_key, rounds, iv)
+
+    decrypted_message = join_blocks(decrypted_blocks)
     decrypted_message = unpad_message(decrypted_message)
     return decrypted_message
 
 
-def decrypt_file(file_name, key, rounds=11):
+def decrypt_file(file_name: str, key: bytes, mode=Mode.ECB, iv: bytes = None, rounds=11):
     encrypted_message = read_file(file_name)
-    decrypted_message = decrypt(encrypted_message, key, rounds)
+    decrypted_message = decrypt(encrypted_message, key, mode, iv, rounds)
     output_file_name = file_name[:-4] if file_name.endswith(
         '.enc') else file_name + '.dec'
     with open(output_file_name, 'wb') as f:
