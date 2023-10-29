@@ -1,9 +1,6 @@
 import logging
+from argparse import ArgumentParser
 from enum import Enum
-
-VERBOSE = False
-
-logging.basicConfig(level=logging.DEBUG if VERBOSE else logging.INFO)
 
 
 class Mode(Enum):
@@ -64,8 +61,24 @@ inv_mix_columns_matrix = (
 )
 
 r_con = (
-    0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36, 0x6c
+    0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a,
+    0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39,
+    0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a,
+    0x74, 0xe8, 0xcb, 0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8,
+    0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef,
+    0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc,
+    0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b,
+    0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3,
+    0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94,
+    0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20,
+    0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35,
+    0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f,
+    0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d, 0x01, 0x02, 0x04,
+    0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63,
+    0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd,
+    0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d
 )
+
 
 E = (
     0x01, 0x03, 0x05, 0x0F, 0x11, 0x33, 0x55, 0xFF, 0x1A, 0x2E, 0x72, 0x96, 0xA1, 0xF8, 0x13, 0x35,
@@ -184,33 +197,43 @@ def expand_key(key, rounds):
             temp[j] ^= expanded_key[-16 + j]
 
         expanded_key += temp
+
     log_round_keys(expanded_key, rounds)
     return expanded_key
 
 
 def encrypt_block(state: bytes, expanded_key: bytes, rounds: int):
     round_key_gen = (expanded_key[i * 16: i * 16 + 16] for i in range(rounds))
-    logging.debug(f'Round 0 - before add round key {bytes_to_hex_string(state)}')
+    logging.debug(
+        f'Round 0 - before add round key {bytes_to_hex_string(state)}')
     state = add_round_key(state, next(round_key_gen))
-    logging.debug(f'Round 1 - after add round key {bytes_to_hex_string(state)}')
+    logging.debug(
+        f'Round 1 - after add round key {bytes_to_hex_string(state)}')
     if rounds <= 1:
         return state
     middle_rounds = rounds - 2
     for i in range(middle_rounds):
         state = sub_bytes(state)
-        logging.debug(f'Round {i+2} - after s-box: {bytes_to_hex_string(state)}')
+        logging.debug(
+            f'Round {i+2} - after s-box: {bytes_to_hex_string(state)}')
         state = shift_rows(state)
-        logging.debug(f'Round {i+2} - after shift rows: {bytes_to_hex_string(state)}')
+        logging.debug(
+            f'Round {i+2} - after shift rows: {bytes_to_hex_string(state)}')
         state = mix_columns(state, mix_columns_matrix)
-        logging.debug(f'Round {i+2} - after mix columns: {bytes_to_hex_string(state)}')
+        logging.debug(
+            f'Round {i+2} - after mix columns: {bytes_to_hex_string(state)}')
         state = add_round_key(state, next(round_key_gen))
-        logging.debug(f'Round {i+2} - after add round key: {bytes_to_hex_string(state)}')
+        logging.debug(
+            f'Round {i+2} - after add round key: {bytes_to_hex_string(state)}')
     state = sub_bytes(state)
-    logging.debug(f'Round {rounds} - after s-box: {bytes_to_hex_string(state)}')
+    logging.debug(
+        f'Round {rounds} - after s-box: {bytes_to_hex_string(state)}')
     state = shift_rows(state)
-    logging.debug(f'Round {rounds} - after shift rows: {bytes_to_hex_string(state)}')
+    logging.debug(
+        f'Round {rounds} - after shift rows: {bytes_to_hex_string(state)}')
     state = add_round_key(state, next(round_key_gen))
-    logging.debug(f'Round {rounds} - after add round key: {bytes_to_hex_string(state)}')
+    logging.debug(
+        f'Round {rounds} - after add round key: {bytes_to_hex_string(state)}')
     return state
 
 
@@ -223,7 +246,7 @@ def pad_message(message: bytes):
     padding = block_size - len(message) % block_size
     if padding == 0:
         padding = block_size
-    logging.info(f'Padding with {padding} bytes')
+    logging.info(f'Padding message with {padding} bytes')
     padded_message = message + bytes([padding] * padding)
     return padded_message
 
@@ -255,6 +278,8 @@ def generate_keystreams(expanded_key: bytes, rounds: int, iv: bytes, n: int):
 
 def ctr_encrypt(states, expanded_key, rounds, iv):
     blocks = []
+    if iv is None:
+        raise Exception('IV is required for CTR mode')
     keystreams = generate_keystreams(expanded_key, rounds, iv, len(states))
     for plain_text_block, keystream in zip(states, keystreams):
         blocks.append(
@@ -269,7 +294,7 @@ def encrypt(message: bytes, key: bytes, mode=Mode.ECB, iv: bytes = None, rounds=
     expanded_key = expand_key(key, rounds)
     padded_message = pad_message(message)
     states = slipt_message(padded_message)
-    logging.debug('Number of blocks: ' + str(len(states)))
+    logging.info('Number of blocks: ' + str(len(states)))
     if mode == Mode.ECB:
         encrypted_blocks = [encrypt_block(
             state, expanded_key, rounds) for state in states]
@@ -278,48 +303,43 @@ def encrypt(message: bytes, key: bytes, mode=Mode.ECB, iv: bytes = None, rounds=
 
     encrypted_message = join_blocks(encrypted_blocks)
     logging.info('Encrypted message: ' +
-                  bytes_to_hex_string(encrypted_message))
+                 bytes_to_hex_string(encrypted_message))
     return encrypted_message
 
 
-def read_file(file_name):
-    with open(file_name, 'rb') as f:
-        return f.read()
-
-
-def encrypt_file(file_name: str, key: bytes, mode=Mode.ECB, iv: bytes = None, rounds=11):
-    logging.info(f'Encrypting {file_name}')
-    message = read_file(file_name)
-    encrypted_message = encrypt(message, key, mode, iv, rounds)
-
-    with open(file_name + '.enc', 'wb') as f:
-        f.write(encrypted_message)
-
-
 def decrypt_block(state: bytes, expanded_key: bytes, rounds=11):
-    logging.debug(f'Round 0 - before add round key {bytes_to_hex_string(state)}')
+    logging.debug(
+        f'Round 0 - before add round key {bytes_to_hex_string(state)}')
     round_key_gen = (expanded_key[i * 16: i * 16 + 16]
                      for i in range(rounds - 1, -1, -1))
     state = add_round_key(state, next(round_key_gen))
-    logging.debug(f'Round 1 - after add round key {bytes_to_hex_string(state)}')
+    logging.debug(
+        f'Round 1 - after add round key {bytes_to_hex_string(state)}')
     if rounds <= 1:
         return state
     middle_rounds = rounds - 2
     for i in range(middle_rounds):
         state = inv_shift_rows(state)
-        logging.debug(f'Round {i+2} - after inv shift rows: {bytes_to_hex_string(state)}')
+        logging.debug(
+            f'Round {i+2} - after inv shift rows: {bytes_to_hex_string(state)}')
         state = inv_sub_bytes(state)
-        logging.debug(f'Round {i+2} - after inv s-box: {bytes_to_hex_string(state)}')
+        logging.debug(
+            f'Round {i+2} - after inv s-box: {bytes_to_hex_string(state)}')
         state = add_round_key(state, next(round_key_gen))
-        logging.debug(f'Round {i+2} - after add round key: {bytes_to_hex_string(state)}')
+        logging.debug(
+            f'Round {i+2} - after add round key: {bytes_to_hex_string(state)}')
         state = mix_columns(state, inv_mix_columns_matrix)
-        logging.debug(f'Round {i+2} - after inv mix columns: {bytes_to_hex_string(state)}')
+        logging.debug(
+            f'Round {i+2} - after inv mix columns: {bytes_to_hex_string(state)}')
     state = inv_shift_rows(state)
-    logging.debug(f'Round {rounds} - after inv shift rows: {bytes_to_hex_string(state)}')
+    logging.debug(
+        f'Round {rounds} - after inv shift rows: {bytes_to_hex_string(state)}')
     state = inv_sub_bytes(state)
-    logging.debug(f'Round {rounds} - after inv s-box: {bytes_to_hex_string(state)}')
+    logging.debug(
+        f'Round {rounds} - after inv s-box: {bytes_to_hex_string(state)}')
     state = add_round_key(state, next(round_key_gen))
-    logging.debug(f'Round {rounds} - after add round key: {bytes_to_hex_string(state)}')
+    logging.debug(
+        f'Round {rounds} - after add round key: {bytes_to_hex_string(state)}')
     return state
 
 
@@ -329,7 +349,7 @@ def decrypt(message: bytes, key: bytes, mode=Mode.ECB, iv: bytes = None, rounds=
     logging.info('Key: ' + bytes_to_hex_string(key))
     expanded_key = expand_key(key, rounds)
     states = slipt_message(message)
-    logging.debug('Number of blocks: ' + str(len(states)))
+    logging.info('Number of blocks: ' + str(len(states)))
 
     if mode == Mode.ECB:
         decrypted_blocks = [decrypt_block(
@@ -340,16 +360,62 @@ def decrypt(message: bytes, key: bytes, mode=Mode.ECB, iv: bytes = None, rounds=
     decrypted_message = join_blocks(decrypted_blocks)
     decrypted_message = unpad_message(decrypted_message)
     logging.info('Decrypted message: ' +
-                  bytes_to_hex_string(decrypted_message))
+                 bytes_to_hex_string(decrypted_message))
     return decrypted_message
 
 
-def decrypt_file(file_name: str, key: bytes, mode=Mode.ECB, iv: bytes = None, rounds=11):
-    logging.info(f'Decrypting {file_name}')
-    encrypted_message = read_file(file_name)
-    decrypted_message = decrypt(encrypted_message, key, mode, iv, rounds)
-    output_file_name = file_name[:-4] if file_name.endswith(
-        '.enc') else file_name + '.dec'
+def fit_string(string: str, length: int):
+    if len(string) < length:
+        logging.info(
+            'hex string is too short, padding with zero bytes to length')
+        return string.rjust(length, '0')
 
-    with open(output_file_name, 'wb') as f:
-        f.write(decrypted_message)
+    if len(string) > length:
+        logging.info(
+            'hex string is too long, ignoring excess')
+        return string[:length]
+
+    return string
+
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument('-in', '--input_file', type=str, required=True)
+    parser.add_argument('-out', '--output_file', type=str, required=True)
+    parser.add_argument(
+        '-e', '--encrypt', action='store_true', dest='encrypt_flag')
+    parser.add_argument(
+        '-d', '--decrypt', action='store_true', dest='decrypt_flag')
+    parser.add_argument('-k', '--key', type=str, required=True)
+    parser.add_argument('-iv', type=str)
+    parser.add_argument('-r', '--rounds', type=int, default=11)
+    parser.add_argument('-m', '--mode', type=str, choices=[
+                        Mode.ECB.name, Mode.CTR.name], default=Mode.ECB.name)
+    parser.add_argument(
+        '-v', '--verbose', action='store_true', dest='verbose_flag')
+    args = parser.parse_args()
+
+    verbose_flag = args.verbose_flag
+    logging.basicConfig(level=logging.DEBUG if verbose_flag else logging.INFO)
+    input_file = args.input_file
+    output_file = args.output_file
+    encrypt_flag = args.encrypt_flag
+    decrypt_flag = args.decrypt_flag
+    key = bytes.fromhex(fit_string(args.key, 32))
+    iv = bytes.fromhex(fit_string(args.iv, 32)) if args.iv else None
+    rounds = args.rounds
+    mode = args.mode
+
+    if encrypt_flag or decrypt_flag:
+        with open(input_file, 'rb') as f:
+            message = f.read()
+
+            if encrypt_flag:
+                output_data = encrypt(message, key,
+                                      Mode[mode], iv, rounds)
+            else:
+                output_data = decrypt(message, key,
+                                      Mode[mode], iv, rounds)
+
+            with open(output_file, 'wb') as f:
+                f.write(output_data)

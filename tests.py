@@ -5,21 +5,6 @@ from main import Mode, bytes_to_hex_string, encrypt, expand_key, decrypt
 
 class Test(unittest.TestCase):
 
-    # key = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    # expanded_key = [
-    #     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    #     0x62, 0x63, 0x63, 0x63, 0x62, 0x63, 0x63, 0x63, 0x62, 0x63, 0x63, 0x63, 0x62, 0x63, 0x63, 0x63,
-    #     0x9b, 0x98, 0x98, 0xc9, 0xf9, 0xfb, 0xfb, 0xaa, 0x9b, 0x98, 0x98, 0xc9, 0xf9, 0xfb, 0xfb, 0xaa,
-    #     0x90, 0x97, 0x34, 0x50, 0x69, 0x6c, 0xcf, 0xfa, 0xf2, 0xf4, 0x57, 0x33, 0x0b, 0x0f, 0xac, 0x99,
-    #     0xee, 0x06, 0xda, 0x7b, 0x87, 0x6a, 0x15, 0x81, 0x75, 0x9e, 0x42, 0xb2, 0x7e, 0x91, 0xee, 0x2b,
-    #     0x7f, 0x2e, 0x2b, 0x88, 0xf8, 0x44, 0x3e, 0x09, 0x8d, 0xda, 0x7c, 0xbb, 0xf3, 0x4b, 0x92, 0x90,
-    #     0xec, 0x61, 0x4b, 0x85, 0x14, 0x25, 0x75, 0x8c, 0x99, 0xff, 0x09, 0x37, 0x6a, 0xb4, 0x9b, 0xa7,
-    #     0x21, 0x75, 0x17, 0x87, 0x35, 0x50, 0x62, 0x0b, 0xac, 0xaf, 0x6b, 0x3c, 0xc6, 0x1b, 0xf0, 0x9b,
-    #     0x0e, 0xf9, 0x03, 0x33, 0x3b, 0xa9, 0x61, 0x38, 0x97, 0x06, 0x0a, 0x04, 0x51, 0x1d, 0xfa, 0x9f,
-    #     0xb1, 0xd4, 0xd8, 0xe2, 0x8a, 0x7d, 0xb9, 0xda, 0x1d, 0x7b, 0xb3, 0xde, 0x4c, 0x66, 0x49, 0x41,
-    #     0xb4, 0xef, 0x5b, 0xcb, 0x3e, 0x92, 0xe2, 0x11, 0x23, 0xe9, 0x51, 0xcf, 0x6f, 0x8f, 0x18, 0x8e,
-    # ]
-
     key = bytes([0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
            0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c])
 
@@ -41,33 +26,35 @@ class Test(unittest.TestCase):
                   0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff])
 
     encrypted_text_1_round = '2b6f37256cfbb4d1236ebf33c512a1c33b6e050638bec2b6bbe7059819df5f2c'
-
     encrypted_text_3_rounds = '6d907fdba181755864be2a35037f426f96acaed276c8c39408b8e85d7a85cbe2'
-
     encrypted_text_11_rounds = '8df4e9aac5c7573a27d8d055d6e4d64ba254be88e037ddd9d79fb6411c3f9df8'
-    encrypted_text_11_rounds_ctr = '8df4e9aac5c7573a27d8d055d6e4d64ba254be88e037ddd9d79fb6411c3f9df8'
+    encrypted_text_11_rounds_ctr = '7de6493f5eedffc4b6db5afc75c6ba9047026d5024a1aeafbee476a9d7627fd6'
 
 
-    # def test_key_expansion(self):
-    #     expanded_key = expand_key(self.key, 11)
-    #     self.assertEqual(expanded_key, self.expanded_key)
+    def test_key_expansion(self):
+        expanded_key = expand_key(self.key, 11)
+        self.assertEqual(expanded_key, self.expanded_key)
 
-    # def test_1_round_encryption(self):
-    #     encrypted_text = encrypt(self.plain_text, self.key, rounds=1)
-    #     self.assertEqual(bytes_to_hex_string(encrypted_text),
-    #                      self.encrypted_text_1_round)
+    def test_1_round_encryption(self):
+        encrypted_text = encrypt(self.plain_text, self.key, rounds=1)
+        self.assertEqual(bytes_to_hex_string(encrypted_text),
+                         self.encrypted_text_1_round)
 
-    # def test_3_rounds_encryption(self):
-    #     encrypted_text = encrypt(self.plain_text, self.key, rounds=3)
-    #     self.assertEqual(bytes_to_hex_string(encrypted_text), self.encrypted_text_3_rounds)
+    def test_3_rounds_encryption(self):
+        encrypted_text = encrypt(self.plain_text, self.key, rounds=3)
+        self.assertEqual(bytes_to_hex_string(encrypted_text), self.encrypted_text_3_rounds)
 
-    # def test_11_rounds_encryption(self):
-    #     encrypted_text = encrypt(self.plain_text, self.key)
-    #     self.assertEqual(bytes_to_hex_string(encrypted_text), self.encrypted_text_11_rounds)
+    def test_11_rounds_encryption(self):
+        encrypted_text = encrypt(self.plain_text, self.key)
+        self.assertEqual(bytes_to_hex_string(encrypted_text), self.encrypted_text_11_rounds)
+
+    def test_11_rounds_ctr_encryption(self):
+        encrypted_text = encrypt(self.plain_text, self.key, Mode.CTR, bytes([0x00]*16))
+        self.assertEqual(bytes_to_hex_string(encrypted_text), self.encrypted_text_11_rounds_ctr)
 
     def test_decryption(self):
-        encrypted_text = encrypt(self.plain_text, self.key, Mode.CTR, bytes([0x00]*16))
-        decrypted_text = decrypt(encrypted_text, self.key, Mode.CTR, bytes([0x00]*16))
+        encrypted_text = encrypt(self.plain_text, self.key, Mode.CTR, bytes([0x00]*16), rounds=15)
+        decrypted_text = decrypt(encrypted_text, self.key, Mode.CTR, bytes([0x00]*16), rounds=15)
         self.assertEqual(bytes_to_hex_string(decrypted_text), bytes_to_hex_string(self.plain_text))
 
 if __name__ == '__main__':
