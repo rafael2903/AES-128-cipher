@@ -1,9 +1,3 @@
-import os
-
-import filetype
-from numpy import int8
-from PIL import Image
-
 s_box = (
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
     0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
@@ -115,23 +109,6 @@ def expand_key(key, rounds):
     expanded_key = []
     expanded_key += key
 
-    # for i in range(10):
-    #     temp = expanded_key[-4:]
-    #     temp = rot_word(temp)
-    #     temp = sub_word(temp)
-    #     temp[0] ^= r_con[i]
-
-    #     for j in range(4):
-    #         temp[j] ^= expanded_key[-16 + j]
-
-    #     expanded_key += temp
-
-    #     for j in range(3):
-    #         temp = expanded_key[-4:]
-    #         for k in range(4):
-    #             temp[k] ^= expanded_key[-16 + k]
-    #         expanded_key += temp
-
     for i in range(4, 4 * rounds):
         temp = expanded_key[-4:]
         if i % 4 == 0:
@@ -178,27 +155,22 @@ def g_mul(a, b):
     return E[(L[a] + L[b]) % 0xff]
 
 
-def mix_columns(state):
+def mix_columns(state, matrix):
     for i in range(4):
         column = state[i * 4: i * 4 + 4]
-        state[i * 4] = g_mul(2, column[0]) ^ g_mul(3,
-                                                   column[1]) ^ column[2] ^ column[3]
-        state[i * 4 +
-              1] = column[0] ^ g_mul(2, column[1]) ^ g_mul(3, column[2]) ^ column[3]
-        state[i * 4 +
-              2] = column[0] ^ column[1] ^ g_mul(2, column[2]) ^ g_mul(3, column[3])
-        state[i * 4 + 3] = g_mul(3, column[0]
-                                 ) ^ column[1] ^ column[2] ^ g_mul(2, column[3])
+        state[i * 4] = g_mul(matrix[0][0], column[0]) ^ g_mul(matrix[0][1], column[1]
+                                                              ) ^ g_mul(matrix[0][2], column[2]) ^ g_mul(matrix[0][3], column[3])
+        state[i * 4 + 1] = g_mul(matrix[1][0], column[0]) ^ g_mul(matrix[1][1],
+                                                                  column[1]) ^ g_mul(matrix[1][2], column[2]) ^ g_mul(matrix[1][3], column[3])
+        state[i * 4 + 2] = g_mul(matrix[2][0], column[0]) ^ g_mul(matrix[2][1],
+                                                                  column[1]) ^ g_mul(matrix[2][2], column[2]) ^ g_mul(matrix[2][3], column[3])
+        state[i * 4 + 3] = g_mul(matrix[3][0], column[0]) ^ g_mul(matrix[3][1],
+                                                                  column[1]) ^ g_mul(matrix[3][2], column[2]) ^ g_mul(matrix[3][3], column[3])
     return state
 
 
-def get_round_key_generator(key: bytes, rounds):
-    expanded_key = expand_key(key, 11)
-    return (expanded_key[i * 16: i * 16 + 16] for i in range(rounds))
-
-
-def encrypt(state: bytes, key: bytes, rounds=11):
-    round_key_gen = get_round_key_generator(key, rounds)
+def encrypt_state(state: bytes, expanded_key: bytes, rounds: int):
+    round_key_gen = (expanded_key[i * 16: i * 16 + 16] for i in range(rounds))
     state = add_round_key(state, next(round_key_gen))
     if rounds <= 1:
         return state
@@ -206,7 +178,7 @@ def encrypt(state: bytes, key: bytes, rounds=11):
     for _ in range(middle_rounds):
         state = sub_bytes(state)
         state = shift_rows(state)
-        state = mix_columns(state)
+        state = mix_columns(state, mix_columns_matrix)
         state = add_round_key(state, next(round_key_gen))
     state = sub_bytes(state)
     state = shift_rows(state)
@@ -218,15 +190,8 @@ def bytes_to_hex_string(bytes: bytes):
     return ''.join(list(map(lambda x: f'{x:0>2x}', bytes)))
 
 
-def print_keys(expanded_key):
-    for i in range(11):
-        print(f'Round {i}: ', end='')
-        for j in range(16):
-            print(f'{expanded_key[i * 16 + j]:0>2x}', end=' ')
-        print()
-
-
-def pad_message(message: bytes, block_size=16):
+def pad_message(message: bytes):
+    block_size = 16
     padding = block_size - len(message) % block_size
     if padding == 0:
         padding = block_size
@@ -235,30 +200,9 @@ def pad_message(message: bytes, block_size=16):
     return padded_message
 
 
-def unpad_state(message):
+def unpad_message(message):
     padding = message[-1]
     return message[:-padding]
-
-# def state_from_file(filename):
-#     file_size = os.path.getsize(filename)
-#     padding = 16 - file_size % 16
-#     with open(filename, "rb") as f:
-#         while True:
-#             chunk = f.read(16)
-#             if chunk and len(chunk) == 16:
-#                 yield chunk
-#             elif chunk and len(chunk) < 16:
-#                 yield chunk + bytes([padding] * padding)
-#             else:
-#                 break
-
-#     if padding == 16:
-#         yield bytes([padding] * padding)
-
-
-def read_file(file_name):
-    with open(file_name, 'rb') as f:
-        return f.read()
 
 
 def join_states(states: list[list[bytes]]):
@@ -269,37 +213,61 @@ def slipt_message(message, block_size=16):
     return [message[i:i+block_size] for i in range(0, len(message), block_size)]
 
 
-def encrypt_message(message: bytes, key):
+def encrypt(message: bytes, key: bytes, rounds=11):
+    expanded_key = expand_key(key, rounds)
     padded_message = pad_message(message)
     states = slipt_message(padded_message)
-    encrypted_states = [encrypt(state, key) for state in states]
+    encrypted_states = [encrypt_state(
+        state, expanded_key, rounds) for state in states]
     encrypted_message = join_states(encrypted_states)
     return encrypted_message
 
 
-def encrypt_file(file_name, key):
+def read_file(file_name):
+    with open(file_name, 'rb') as f:
+        return f.read()
 
-    # if filetype.is_image(file_name):
-    #     image = Image.open(file_name)
-    #     image = image.convert('RGB')
-    #     pixels = list(image.getdata())
-    #     pixels = [list(pixel) for pixel in pixels]
-    #     pixels = [pixel for row in pixels for pixel in row]
-    #     pixels = bytes(pixels)
-    #     encrypted_message = encrypt_message(pixels, key)
-    #     encrypted_message = list(encrypted_message)
-    #     encrypted_message = [encrypted_message[i:i+3]
-    #                          for i in range(0, len(encrypted_message), 3)]
-    #     encrypted_message = [tuple(pixel) for pixel in encrypted_message]
-    #     encrypted_message = [tuple(encrypted_message[i:i+image.width])
-    #                          for i in range(0, len(encrypted_message), image.width)]
-    #     encrypted_message = Image.new(
-    #         image.mode, image.size, color=0)
-    #     encrypted_message.putdata(encrypted_message)
-    #     encrypted_message.save(file_name + '.enc')
 
+def encrypt_file(file_name: str, key: bytes, rounds=11):
     message = read_file(file_name)
-    encrypted_message = encrypt_message(message, key)
+    encrypted_message = encrypt(message, key, rounds)
 
     with open(file_name + '.enc', 'wb') as f:
         f.write(encrypted_message)
+
+
+def decrypt_state(state: bytes, expanded_key: bytes, rounds=11):
+    round_key_gen = (expanded_key[i * 16: i * 16 + 16]
+                     for i in range(rounds - 1, -1, -1))
+    state = add_round_key(state, next(round_key_gen))
+    if rounds <= 1:
+        return state
+    middle_rounds = rounds - 2
+    for _ in range(middle_rounds):
+        state = inv_shift_rows(state)
+        state = inv_sub_bytes(state)
+        state = add_round_key(state, next(round_key_gen))
+        state = mix_columns(state, inv_mix_columns_matrix)
+    state = inv_shift_rows(state)
+    state = inv_sub_bytes(state)
+    state = add_round_key(state, next(round_key_gen))
+    return state
+
+
+def decrypt(message: bytes, key: bytes, rounds=11):
+    expanded_key = expand_key(key, rounds)
+    states = slipt_message(message)
+    decrypted_states = [decrypt_state(
+        state, expanded_key, rounds) for state in states]
+    decrypted_message = join_states(decrypted_states)
+    decrypted_message = unpad_message(decrypted_message)
+    return decrypted_message
+
+
+def decrypt_file(file_name, key, rounds=11):
+    encrypted_message = read_file(file_name)
+    decrypted_message = decrypt(encrypted_message, key, rounds)
+    output_file_name = file_name[:-4] if file_name.endswith(
+        '.enc') else file_name + '.dec'
+    with open(output_file_name, 'wb') as f:
+        f.write(decrypted_message)

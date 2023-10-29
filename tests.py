@@ -1,6 +1,6 @@
 import unittest
 
-from main import bytes_to_hex_string, encrypt, expand_key, print_keys
+from main import bytes_to_hex_string, encrypt, expand_key, print_keys, decrypt
 
 
 class Test(unittest.TestCase):
@@ -20,8 +20,8 @@ class Test(unittest.TestCase):
     #     0xb4, 0xef, 0x5b, 0xcb, 0x3e, 0x92, 0xe2, 0x11, 0x23, 0xe9, 0x51, 0xcf, 0x6f, 0x8f, 0x18, 0x8e,
     # ]
 
-    key = [0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
-           0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c]
+    key = bytes([0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
+           0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c])
 
     expanded_key = [
         0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c,
@@ -37,14 +37,14 @@ class Test(unittest.TestCase):
         0xd0, 0x14, 0xf9, 0xa8, 0xc9, 0xee, 0x25, 0x89, 0xe1, 0x3f, 0x0c, 0xc8, 0xb6, 0x63, 0x0c, 0xa6,
     ]
 
-    plain_text = [0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66,
-                  0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff]
+    plain_text = bytes([0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66,
+                  0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff])
 
-    encrypted_text_1_round = '2b6f37256cfbb4d1236ebf33c512a1c3'
+    encrypted_text_1_round = '2b6f37256cfbb4d1236ebf33c512a1c33b6e050638bec2b6bbe7059819df5f2c'
 
-    encrypted_text_3_rounds = '6d907fdba181755864be2a35037f426f'
+    encrypted_text_3_rounds = '6d907fdba181755864be2a35037f426f96acaed276c8c39408b8e85d7a85cbe2'
 
-    encrypted_text_11_rounds = '8df4e9aac5c7573a27d8d055d6e4d64b'
+    encrypted_text_11_rounds = '8df4e9aac5c7573a27d8d055d6e4d64ba254be88e037ddd9d79fb6411c3f9df8'
 
     @classmethod
     def setUpClass(self):
@@ -58,7 +58,7 @@ class Test(unittest.TestCase):
 
     def test_1_round_encryption(self):
         encrypted_text = encrypt(self.plain_text, self.key, 1)
-        print('\nPlain text: ', bytes_to_hex_string(self.plain_text))
+        # print('\nPlain text: ', bytes_to_hex_string(self.plain_text))
         # print('Encrypted text: ', bytes_to_hex_string(encrypted_text))
         # print('Encrypted text: ', bytes_to_hex_string(encrypted_text))
         self.assertEqual(bytes_to_hex_string(encrypted_text),
@@ -66,15 +66,20 @@ class Test(unittest.TestCase):
 
     def test_3_rounds_encryption(self):
         encrypted_text = encrypt(self.plain_text, self.key, 3)
-        print('\nPlain text: ', bytes_to_hex_string(self.plain_text))
+        # print('\nPlain text: ', bytes_to_hex_string(self.plain_text))
         # print('Encrypted text: ', bytes_to_hex_string(encrypted_text))
         self.assertEqual(bytes_to_hex_string(encrypted_text), self.encrypted_text_3_rounds)
 
     def test_11_rounds_encryption(self):
         encrypted_text = encrypt(self.plain_text, self.key, 11)
-        print('\nPlain text: ', bytes_to_hex_string(self.plain_text))
+        # print('\nPlain text: ', bytes_to_hex_string(self.plain_text))
         # print('Encrypted text: ', bytes_to_hex_string(encrypted_text))
         self.assertEqual(bytes_to_hex_string(encrypted_text), self.encrypted_text_11_rounds)
+
+    def test_decryption(self):
+        encrypted_text = encrypt(self.plain_text, self.key, 11)
+        decrypted_text = decrypt(encrypted_text, self.key, 11)
+        self.assertEqual(bytes_to_hex_string(decrypted_text), bytes_to_hex_string(self.plain_text))
 
     @classmethod
     def tearDownClass(self):
