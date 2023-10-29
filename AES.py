@@ -333,7 +333,7 @@ def fit_string(string: str, length: int):
     if len(string) < length:
         logging.info(
             'hex string is too short, padding with zero bytes to length')
-        return string.rjust(length, '0')
+        return string.ljust(length, '0')
 
     if len(string) > length:
         logging.info(
@@ -382,6 +382,5 @@ if __name__ == '__main__':
             else:
                 output_data = decrypt(message, key,
                                       Mode[mode], iv, rounds)
-
             with open(output_file, 'wb') as f:
                 f.write(output_data)
